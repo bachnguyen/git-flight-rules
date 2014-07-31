@@ -1,5 +1,5 @@
 # Flight rules for git
-Test git trello.
+Test git trello
 
 ### What are "flight rules"?
 
