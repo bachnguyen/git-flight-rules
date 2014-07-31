@@ -1,6 +1,5 @@
 # Flight rules for git
 Test git trello
-
 ### What are "flight rules"?
 
 A [guide for astronauts](http://www.jsc.nasa.gov/news/columbia/fr_generic.pdf) (now, programmers using git) about what to do when things go wrong.
