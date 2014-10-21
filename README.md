@@ -1,5 +1,5 @@
 # Flight rules for git
-Test git trello 
+
 
 ### What are "flight rules"?
 
@@ -7,7 +7,7 @@ A [guide for astronauts](http://www.jsc.nasa.gov/news/columbia/fr_generic.pdf) (
 
 >  *Flight Rules* are the hard-earned body of knowledge recorded in manuals that list, step-by-step, what to do if X occurs, and why. Essentially, they are extremely detailed, scenario-specific standard operating procedures. [...]
 
-> NASA has been capturing our missteps, disasters and solutions since the early 1960s, when Mercury-era ground teams first started gathering "lessons learned" into a compendium that now lists thousands of problematic sitautions, from engine failure to busted hatch handles to computer glitches, and their solutions.
+> NASA has been capturing our missteps, disasters and solutions since the early 1960s, when Mercury-era ground teams first started gathering "lessons learned" into a compendium that now lists thousands of problematic situations, from engine failure to busted hatch handles to computer glitches, and their solutions.
 
 &mdash; Chris Hadfield, *An Astronaut's Guide to Life*.
 
@@ -16,7 +16,7 @@ A [guide for astronauts](http://www.jsc.nasa.gov/news/columbia/fr_generic.pdf) (
 
 For clarity's sake all examples in this document use customized bash prompt in order to indicate the current branch and whether or not there are staged changes. The branch is enclosed in parentheses, and a `*` next to the branch name indicates staged changes.
 
-
+<a name="amend"></a>
 ## I need to add staged changes to the previous commit
 
 ```
@@ -24,10 +24,14 @@ For clarity's sake all examples in this document use customized bash prompt in o
 
 ```
 
+<a name="force-push"></a>
 ### I tried to push my amended commit to a remote, but I got an error message
 
 Note that, as with rebasing (see below), amending **replaces the old commit with a new one**, so you must force push (`-f`) your changes if you have already pushed the pre-amended commit to your remote. Be careful when you do this &ndash; *always* make sure you specify a branch!
 
+In fact, if you are not the only developer using the repo **avoid force pushing**. It is best to create and push a new commit rather than force-pushing the amended commit as it has the potential to mess with the shared history.
+
+<a name="interactive-rebase"></a>
 ## I need to combine commits
 
 You need to do something called an interactive rebase.
@@ -38,7 +42,7 @@ If you are working in a branch that is/will become a pull-request against `maste
 (my-branch)$ git rebase -i master
 ```
 
-If you aren't working against another branch you'll have to rebase relative to your `HEAD`. If you want to squish the last 2 commits, for example, you'll have to rebase against `HEAD~2`. For the last 3, `HEAD~3`, etc.
+If you aren't working against another branch you'll have to rebase relative to your `HEAD`. If you want to squash the last 2 commits, for example, you'll have to rebase against `HEAD~2`. For the last 3, `HEAD~3`, etc.
 
 ```
 (master)$ git rebase -i HEAD~2
@@ -110,8 +114,21 @@ If everything is successful, you should see something like this:
 (master)$ Successfully rebased and updated refs/heads/master.
 ```
 
+<a name="rebase-unpushed-commits"></a>
+#### I want to combine only unpushed commits
+
+Sometimes you have several work in progress commits that you want to combine before you push them upstream. You don't want to accidentally combine any commits that have already been pushed upstream because someone else may have already made commits that reference them.
+
+```
+(master)$ git rebase -i @{u}
+```
+
+This will do an interactive rebase that lists only the commits that you haven't already pushed, so it will be safe to reorder/fix/squash anything in the list.
+
+
 ### Possible issues with interactive rebases
 
+<a name="noop"></a>
 #### The rebase editing screen says 'noop'
 
 If you're seeing this:
@@ -124,6 +141,7 @@ That means you are trying to rebase against a branch that is at an identical com
 * making sure your master branch is where it should be
 * rebase against `HEAD~2` or earlier instead
 
+<a name="merge-conflict"></a>
 #### There were conflicts
 
 If you are unable to successfully complete the rebase, you may have to resolve conflicts.
@@ -165,6 +183,7 @@ If at any time you want to stop the entire rebase and go back to the original st
 (my-branch)$ git rebase --abort
 ```
 
+<a name="force-push"></a>
 #### When I try to push, I get an error message:
 
 ```
@@ -183,15 +202,25 @@ Since rebasing **replaces the old commit(s) with a new one**, you must force pus
 (mybranch) $ git push origin mybranch -f
 ```
 
+<a name="commit-wrong-author"></a>
+## I committed with the wrong name and email configured
+
+If it's a single commit, amend it
+
+```
+$ git commit --amend --author "New Authorname <authoremail@mydomain.com>" 
+```
+
+If you need to change all of history, see the man page for 'git filter-branch'
+
+<a name="commit-wrong-branch"></a>
 ## I committed to master instead of a new branch
 
 
-Check out a new branch, then return to your master branch
+Create the new branch while remaining on master:
 
 ```
-(master)$ git checkout -b new-branch 
-(new-branch)$ git checkout master
-(master)$
+(master)$ git branch new-branch 
 ```
 
 Find out what the commit hash you want to set your master branch to (`git log` should do the trick). Then reset to that hash.
@@ -203,6 +232,13 @@ For example, if the hash of the commit that your master branch is supposed to be
 HEAD is now at a13b85e
 ```
 
+Checkout the new branch to continue working:
+
+```
+(master)$ git checkout new-branch
+```
+
+<a name="cherry-pick"></a>
 ## I made several commits on a single branch that should be on different branches
 
 Say you are on your master branch. Running `git log`, you see you have made two commits:
@@ -251,7 +287,7 @@ Now, let's *cherry-pick* the commit for bug #21 on top of our branch. That means
 (21)$ git cherry-pick e3851e8
 ```
 
-At this point, there is a possibility there might be conflicts. See the **There were conflicts** section in the interactive rebasing section (above) for how to resolve conflicts.
+At this point, there is a possibility there might be conflicts. See the [**There were conflicts**](#merge-conflict) section in the [interactive rebasing section above](#interactive-rebase) for how to resolve conflicts.
 
 
 Now let's create a new branch for bug #14, also based on master
@@ -268,3 +304,72 @@ And finally, let's cherry-pick the commit for bug #14:
 (14)$ git cherry-pick 5ea5173
 ```
 
+
+## I accidentaly deleted my branch
+
+If you're regularly pushing to remote, you should be safe most of the time. But still sometimes you may end up deleting your branches. Let's say we create a branch and create a new file:
+
+```
+(master)$ git checkout -b branch-1
+(branch-1)$ git branch
+(branch-1)$ touch foo.txt
+(branch-1)$ ls
+README.md foo.txt
+```
+
+Let's add it and commit.
+
+```
+(branch-1)$ git add .
+(branch-1)$ git commit -m 'foo.txt added'
+(branch-1)$ foo.txt added
+ 1 files changed, 1 insertions(+)
+ create mode 100644 foo.txt
+(branch-1)$ git log
+
+commit 4e3cd85a670ced7cc17a2b5d8d3d809ac88d5012
+Author: siemiatj <kuba@saucelabs.com>
+Date:   Wed Jul 30 00:34:10 2014 +0200
+
+    foo.txt added
+
+commit 69204cdf0acbab201619d95ad8295928e7f411d5
+Author: Kate Hudson <k88hudson@gmail.com>
+Date:   Tue Jul 29 13:14:46 2014 -0400
+
+    Fixes #6: Force pushing after amending commits
+```
+
+Now we're switching back to master and 'accidentaly' removing our branch.
+
+```
+(branch-1)$ git checkout master
+Switched to branch 'master'
+Your branch is up-to-date with 'origin/master'.
+(master)$ git branch -D branch-1
+Deleted branch branch-1 (was 4e3cd85).
+(master)$ echo oh noes, deleted my branch!
+oh noes, deleted my branch!
+```
+
+At this point you should get familiar with 'reflog', an upgraded logger. It stores the history of all the action in the repo.
+
+```
+(master)$ git reflog
+69204cd HEAD@{0}: checkout: moving from branch-1 to master
+4e3cd85 HEAD@{1}: commit: foo.txt added
+69204cd HEAD@{2}: checkout: moving from master to branch-1
+```
+
+As you can see we have commit hash from our deleted branch. Let's see if we can restore our deleted branch.
+
+```
+(master)$ git checkout -b branch-1-help
+Switched to a new branch 'branch-1-help'
+(branch-1-help)$ git reset --hard 4e3cd85
+HEAD is now at 4e3cd85 foo.txt added
+(branch-1-help)$ ls
+README.md foo.txt
+```
+
+Voila! We got our removed file back. Git reflog is also useful when rebasing goes terribly wrong.
